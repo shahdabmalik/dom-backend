@@ -39,31 +39,27 @@ app.get('/score', (req, res) => {
       return res.status(500).send('Error retrieving data');
     }
     if (results.length > 0) {
-      sendAndRunImageURL(hash, results[0].score, res);
+      sendAndCreateImageUrl(hash, results[0].score, res);
     } else {
       res.status(404).send('No data found');
     }
   });
 });
 
-const sendAndRunImageURL = (hash, score, res) => {
-  const image = sharp({
-    create: {
-      width: 1280,
-      height: 768,
-      channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
-    }
-  })
-  .composite([
-    {
-      input: Buffer.from(`Hash: ${hash}\nScore: ${score}`, 'utf-8'),
-      gravity: 'northwest'
-    }
-  ])
-  .png();
+const sendAndCreateImageUrl = (hash, score, res) => {
+  const imagePath = path.join(__dirname, 'map.png');
+  const svgText = `
+    <svg width="800" height="200">
+      <text x="10" y="20" font-family="Arial" font-size="20" fill="black">Hash: ${hash}</text>
+      <text x="10" y="50" font-family="Arial" font-size="20" fill="black">Score: ${score}</text>
+    </svg>
+  `;
 
-  image.toBuffer()
+  sharp(imagePath)
+    .composite([
+      { input: Buffer.from(svgText), top: 0, left: 0 }
+    ])
+    .toBuffer()
     .then(buffer => {
       res.type('png').send(buffer);
     })
