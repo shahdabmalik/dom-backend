@@ -15,7 +15,6 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
-// Create a MySQL connection
 const db = mysql.createConnection({
   host: 'bajyst8d3ii2pggur7nf-mysql.services.clever-cloud.com',
   user: 'u9vcahinm9sf2rwt',
@@ -30,18 +29,49 @@ db.connect((err) => {
   console.log('Connected to database');
 });
 
-// Endpoint to save score and hash
-app.post('/save-score', (req, res) => {
-  const { hash, score } = req.body;
-  const query = 'INSERT INTO scores (hash, score) VALUES (?, ?)';
 
-  db.query(query, [hash, score], (err, result) => {
+app.get('/score', (req, res) => {
+  const hash = req.query.hash;
+  const query = 'SELECT score FROM scores WHERE hash = ?';
+
+  db.query(query, [hash], (err, results) => {
     if (err) {
-      return res.status(500).send('Error saving data');
+      return res.status(500).send('Error retrieving data');
     }
-    res.status(200).send('Data saved successfully');
+    if (results.length > 0) {
+      sendAndRunImageURL(hash, results[0].score, res);
+    } else {
+      res.status(404).send('No data found');
+    }
   });
 });
+
+const sendAndRunImageURL = (hash, score, res) => {
+  const image = sharp({
+    create: {
+      width: 1280,
+      height: 768,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 }
+    }
+  })
+  .composite([
+    {
+      input: Buffer.from(`Hash: ${hash}\nScore: ${score}`, 'utf-8'),
+      gravity: 'northwest'
+    }
+  ])
+  .png();
+
+  image.toBuffer()
+    .then(buffer => {
+      res.type('png').send(buffer);
+    })
+    .catch(err => {
+      console.error('Error processing image', err);
+      res.status(500).send('Error processing image');
+    });
+}
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
