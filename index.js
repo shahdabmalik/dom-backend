@@ -2,8 +2,10 @@ const express = require('express');
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const cors = require('cors')
-const sharp = require('sharp');
+// const sharp = require('sharp');
 const path = require('path');
+var Jimp = require("jimp");
+
 
 const app = express();
 const port = 3000;
@@ -60,27 +62,64 @@ app.get('/score', (req, res) => {
 });
 
 const sendAndCreateImageUrl = (hash, score, res) => {
-  const imagePath = path.join(__dirname, 'map.png');
-  const svgText = `
-    <svg width="800" height="200">
-      <text x="10" y="20" font-size="20" fill="black">Hash: ${hash}</text>
-      <text x="10" y="50" font-size="20" fill="black">Score: ${score}</text>
-    </svg>
-  `;
+  var fileName = 'map.png';
+  var loadedImage;
 
-  sharp(imagePath)
-    .composite([
-      { input: Buffer.from(svgText), top: 0, left: 0 }
-    ])
-    .toBuffer()
-    .then(buffer => {
-      res.type('png').send(buffer);
+  Jimp.read(fileName)
+    .then((image) => {
+      loadedImage = image;
+      return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK); // Use a larger font
     })
-    .catch(err => {
-      console.error('Error processing image', err);
+    .then((font) => {
+      const text = `                  #DOME   \nHash: ${hash}\nScore: ${score}`;
+      const textWidth = Jimp.measureText(font, text);
+      const textHeight = Jimp.measureTextHeight(font, text, loadedImage.bitmap.width);
+      const x = (loadedImage.bitmap.width - textWidth) / 2; // Centering the text horizontally
+      const y = (loadedImage.bitmap.height - textHeight) / 1.5; // Centering the text vertically
+      loadedImage.print(font, x, y, text).getBuffer(Jimp.MIME_PNG, (err, buffer) => {
+        if (err) {
+          throw new Error(err.message);
+        }
+        res.set("Content-Type", Jimp.MIME_PNG);const sendAndCreateImageUrl = (hash, score, res) => {
+          var fileName = 'map.png';
+          var loadedImage;
+        
+          Jimp.read(fileName)
+            .then((image) => {
+              loadedImage = image;
+              // Load a custom or the largest available built-in bold font
+              // Example: return Jimp.loadFont('path/to/your/font.fnt');
+              return Jimp.loadFont(Jimp.FONT_SANS_64_BLACK); // Assuming 64 is the closest larger standard available
+            })
+            .then((font) => {
+              const text = `#DOME\nHash: ${hash}\nScore: ${score}`;
+              const textWidth = Jimp.measureText(font, text);
+              const textHeight = Jimp.measureTextHeight(font, text, loadedImage.bitmap.width);
+              const x = (loadedImage.bitmap.width - textWidth) / 2; // Centering the text horizontally
+              const y = (loadedImage.bitmap.height - textHeight) / 1.5; // Adjusted vertical position
+              loadedImage.print(font, x, y, text).getBuffer(Jimp.MIME_PNG, (err, buffer) => {
+                if (err) {
+                  throw new Error(err.message);
+                }
+                res.set("Content-Type", Jimp.MIME_PNG);
+                res.send(buffer);
+              })
+            })
+            .catch((err) => {
+              console.error(err);
+              res.status(500).send('Error processing image');
+            })
+        }
+        
+        res.send(buffer);
+      })
+    })
+    .catch((err) => {
+      console.error(err);
       res.status(500).send('Error processing image');
-    });
+    })
 }
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
