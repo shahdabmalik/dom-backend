@@ -63,8 +63,8 @@ const sendAndCreateImageUrl = (hash, score, res) => {
   const imagePath = path.join(__dirname, 'map.png');
   const svgText = `
     <svg width="800" height="200">
-      <text x="10" y="20" font-family="Arial" font-size="20" fill="black">Hash: ${hash}</text>
-      <text x="10" y="50" font-family="Arial" font-size="20" fill="black">Score: ${score}</text>
+      <text x="10" y="20" font-size="20" fill="black">Hash: ${hash}</text>
+      <text x="10" y="50" font-size="20" fill="black">Score: ${score}</text>
     </svg>
   `;
 
