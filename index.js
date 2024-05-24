@@ -29,6 +29,17 @@ db.connect((err) => {
   console.log('Connected to database');
 });
 
+app.post('/save-score', (req, res) => {
+  const { hash, score } = req.body;
+  const query = 'INSERT INTO scores (hash, score) VALUES (?, ?)';
+  
+  db.query(query, [hash, score], (err, result) => {
+    if (err) {
+      return res.status(500).send('Error saving data');
+    }
+    res.status(200).send('Data saved successfully');
+  });
+});
 
 app.get('/score', (req, res) => {
   const hash = req.query.hash;
