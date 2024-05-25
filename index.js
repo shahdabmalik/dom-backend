@@ -62,7 +62,7 @@ app.get('/score', (req, res) => {
 });
 
 const sendAndCreateImageUrl = (hash, score, res) => {
-  const fileName = 'https://socialverse-assets.s3.amazonaws.com/profile/map.png';
+  const fileName = 'map.png';
   let loadedImage;
 
   Jimp.read(fileName)
