@@ -2,13 +2,12 @@ const express = require('express');
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const cors = require('cors')
-// const sharp = require('sharp');
 const path = require('path');
 var Jimp = require("jimp");
 
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 app.use(cors({
   origin: [
@@ -68,15 +67,23 @@ const sendAndCreateImageUrl = (hash, score, res) => {
   Jimp.read(fileName)
     .then((image) => {
       loadedImage = image;
-      return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK); // Use a larger font
+      return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
     })
     .then((font) => {
-      const text = `                  #DOME   \nHash: ${hash}\nScore: ${score}`;
+      const text = `#DOME\nHash: ${hash}\nScore: ${score}`;
       const textWidth = Jimp.measureText(font, text);
       const textHeight = Jimp.measureTextHeight(font, text, loadedImage.bitmap.width);
-      const x = (loadedImage.bitmap.width - textWidth) / 2; // Centering the text horizontally
-      const y = (loadedImage.bitmap.height - textHeight) / 1.5; // Centering the text vertically
-      loadedImage.print(font, x, y, text).getBuffer(Jimp.MIME_PNG, (err, buffer) => {
+      const x = (loadedImage.bitmap.width - textWidth) / 1;
+      const y = (loadedImage.bitmap.height - textHeight) / 3.2;
+
+      // Drawing the text multiple times to create a bold effect
+      const offsets = [-1, 0, 1];
+      offsets.forEach(offset => {
+        loadedImage.print(font, x + offset, y, text);
+        loadedImage.print(font, x, y + offset, text);
+      });
+
+      loadedImage.getBuffer(Jimp.MIME_PNG, (err, buffer) => {
         if (err) {
           throw new Error(err.message);
         }
