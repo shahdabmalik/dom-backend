@@ -119,6 +119,26 @@ function setupRoutes(db) {
   };
 }
 
+// Paginated GET API to retrieve top scores
+app.get('/top-scores', (req, res) => {
+  let page = parseInt(req.query.page) || 1;
+  let limit = parseInt(req.query.limit) || 10;
+  let offset = (page - 1) * limit;
+
+  const query = 'SELECT * FROM scores ORDER BY score DESC LIMIT ? OFFSET ?';
+
+  db.query(query, [limit, offset], (err, results) => {
+    if (err) {
+      return res.status(500).send('Error retrieving data');
+    }
+    res.status(200).json({
+      page: page,
+      limit: limit,
+      results: results
+    });
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
 });
