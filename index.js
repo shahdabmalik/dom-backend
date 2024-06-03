@@ -51,10 +51,10 @@ const db = connectToDatabase();
 
 function setupRoutes(db) {
   app.post('/save-score', (req, res) => {
-    const { hash, score } = req.body;
-    const query = 'INSERT INTO scores (hash, score) VALUES (?, ?)';
+    const { hash, score, level } = req.body;
+    const query = 'INSERT INTO scores (hash, score, level) VALUES (?, ?, ?)';
 
-    db.query(query, [hash, score], (err, result) => {
+    db.query(query, [hash, score, level], (err, result) => {
       if (err) {
         console.error('Error saving data:', err);
         return res.status(500).send('Error saving data');
