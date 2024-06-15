@@ -151,8 +151,14 @@ app.get('/view-score', (req, res) => {
       <meta name="twitter:card" content="summary_large_image">
       <meta name="twitter:title" content="Check out my game score!">
       <meta name="twitter:description" content="I scored high on DOME! See my score and try to beat it.">
-      <meta name="twitter:image" content="https://socialverse-assets.s3.amazonaws.com/GameMap.jpg">
-      // https://dom-backend.onrender.com/score?hash=9db73cdb-b8ac-4289-b7c0-1b6b692dc3cf
+      <meta name="twitter:image" content="https://dom-backend.onrender.com/score?game_id=${game_id}">
+      <style>
+        img: {
+          width: 100%;
+          height: 100vh;
+          margin: 0;
+        }
+      </style>
       <title>DOME SOCRE</title>
     </head>
     <body>
@@ -164,6 +170,8 @@ app.get('/view-score', (req, res) => {
   res.send(htmlContent);
 });
 
+
+{/* <meta name="twitter:image" content="https://socialverse-assets.s3.amazonaws.com/GameMap.jpg"> */}
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
