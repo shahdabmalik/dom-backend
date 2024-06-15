@@ -51,10 +51,10 @@ const db = connectToDatabase();
 
 function setupRoutes(db) {
   app.post('/save-score', (req, res) => {
-    const { hash, score, currentLevel } = req.body;
-    const query = 'INSERT INTO scores (hash, score, level) VALUES (?, ?, ?)';
+    const { game_id, score, currentLevel } = req.body;
+    const query = 'INSERT INTO scores (game_id, score, level) VALUES (?, ?, ?)';
 
-    db.query(query, [hash, score, currentLevel], (err, result) => {
+    db.query(query, [game_id, score, currentLevel], (err, result) => {
       if (err) {
         console.error('Error saving data:', err);
         return res.status(500).send('Error saving data');
@@ -64,23 +64,23 @@ function setupRoutes(db) {
   });
 
   app.get('/score', (req, res) => {
-    const hash = req.query.hash;
-    const query = 'SELECT score FROM scores WHERE hash = ?';
+    const game_id = req.query.game_id;
+    const query = 'SELECT score FROM scores WHERE game_id = ?';
 
-    db.query(query, [hash], (err, results) => {
+    db.query(query, [game_id], (err, results) => {
       if (err) {
         console.error('Error retrieving data:', err);
         return res.status(500).send('Error retrieving data');
       }
       if (results.length > 0) {
-        sendAndCreateImageUrl(hash, results[0].score, res);
+        sendAndCreateImageUrl(game_id, results[0].score, res);
       } else {
         res.status(404).send('No data found');
       }
     });
   });
 
-  const sendAndCreateImageUrl = (hash, score, res) => {
+  const sendAndCreateImageUrl = (game_id, score, res) => {
     const fileName = 'map.png';
     let loadedImage;
 
@@ -90,7 +90,7 @@ function setupRoutes(db) {
         return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
       })
       .then((font) => {
-        const text = `#DOME\nHash: ${hash}\nScore: ${score}`;
+        const text = `#DOME\ngame_id: ${game_id}\nScore: ${score}`;
         const textWidth = Jimp.measureText(font, text);
         const textHeight = Jimp.measureTextHeight(font, text, loadedImage.bitmap.width);
         const x = (loadedImage.bitmap.width - textWidth) / 1;
@@ -138,6 +138,32 @@ app.get('/top-scores', (req, res) => {
     });
   });
 });
+
+app.get('/view-score', (req, res) => {
+  const { game_id } = req.query;
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <!-- Twitter meta tags -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="Check out my game score!">
+      <meta name="twitter:description" content="I scored high on DOME! See my score and try to beat it.">
+      <meta name="twitter:image" content="https://socialverse-assets.s3.amazonaws.com/GameMap.jpg">
+      // https://dom-backend.onrender.com/score?hash=9db73cdb-b8ac-4289-b7c0-1b6b692dc3cf
+      <title>DOME SOCRE</title>
+    </head>
+    <body>
+      <h1>GAME ID: ${game_id}</h1>
+      <img src="https://dom-backend.onrender.com/score?game_id=${game_id}" alt="Scored Image">
+    </body>
+    </html>
+  `;
+  res.send(htmlContent);
+});
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
