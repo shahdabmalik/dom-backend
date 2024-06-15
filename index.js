@@ -3,7 +3,8 @@ const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const Jimp = require("jimp");
+const sharp = require('sharp');
+const { createCanvas, loadImage, registerFont } = require('canvas');
 
 const app = express();
 const port = 3002;
@@ -34,13 +35,13 @@ function connectToDatabase() {
       if (err.code === 'EAI_AGAIN' && retries < MAX_RETRIES) {
         retries++;
         console.log(`Retrying to connect... (${retries}/${MAX_RETRIES})`);
-        setTimeout(connectToDatabase, 2000); // retry after 2 seconds
+        setTimeout(connectToDatabase, 2000);
       } else {
         console.error('Database connection failed:', err);
       }
     } else {
       console.log('Connected to database');
-      setupRoutes(db); // Setup routes after successful connection
+      setupRoutes(db);
     }
   });
 
@@ -63,63 +64,70 @@ function setupRoutes(db) {
     });
   });
 
-  app.get('/score', (req, res) => {
-    const game_id = req.query.game_id;
-    const query = 'SELECT score FROM scores WHERE game_id = ?';
-
-    db.query(query, [game_id], (err, results) => {
-      if (err) {
-        console.error('Error retrieving data:', err);
-        return res.status(500).send('Error retrieving data');
-      }
-      if (results.length > 0) {
-        sendAndCreateImageUrl(game_id, results[0].score, res);
-      } else {
-        res.status(404).send('No data found');
-      }
-    });
-  });
-
   const sendAndCreateImageUrl = (game_id, score, res) => {
     const fileName = 'map.png';
-    let loadedImage;
+    const fontSize = 50;
 
-    Jimp.read(fileName)
-      .then((image) => {
-        loadedImage = image;
-        return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+    loadImage(fileName)
+      .then(image => {
+        const canvas = createCanvas(image.width, image.height);
+        const ctx = canvas.getContext('2d');
+
+        // Draw the original image on the canvas
+        ctx.drawImage(image, 0, 0, image.width, image.height);
+
+        ctx.font = `bold ${fontSize}px Arial`;
+        const text = `#DOME\nGAME-ID: ${game_id}\nScore: ${score}`;
+        const textWidth = ctx.measureText(text).width;
+        const textHeight = fontSize * 1.2 * 3;
+
+        // Text coordinates
+        const x = (image.width - textWidth) / 2;
+        const y = (image.height - textHeight) / 2;
+
+        // Background rectangle for text with opacity
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(x, y, textWidth, textHeight);
+
+        // Text color and alignment
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Drawing the text
+        ctx.fillText(text, image.width / 2, (image.height / 2) - 60);
+
+        // Convert canvas to Buffer
+        const buffer = canvas.toBuffer('image/png');
+
+        res.set("Content-Type", "image/png");
+        res.send(buffer);
       })
-      .then((font) => {
-        const text = `#DOME\ngame_id: ${game_id}\nScore: ${score}`;
-        const textWidth = Jimp.measureText(font, text);
-        const textHeight = Jimp.measureTextHeight(font, text, loadedImage.bitmap.width);
-        const x = (loadedImage.bitmap.width - textWidth) / 1;
-        const y = (loadedImage.bitmap.height - textHeight) / 3.2;
-
-        // Drawing the text multiple times to create a bold effect
-        const offsets = [-1, 0, 1];
-        offsets.forEach(offset => {
-          loadedImage.print(font, x + offset, y, text);
-          loadedImage.print(font, x, y + offset, text);
-        });
-
-        loadedImage.getBuffer(Jimp.MIME_PNG, (err, buffer) => {
-          if (err) {
-            console.error('Error processing image:', err);
-            return res.status(500).send('Error processing image');
-          }
-          res.set("Content-Type", Jimp.MIME_PNG);
-          res.send(buffer);
-        });
-      })
-      .catch((err) => {
+      .catch(err => {
         console.error('Error processing image:', err);
         res.status(500).send('Error processing image');
-      });
+      }
+    );
   };
+
+  app.get('/score', (req, res) => {
+      const game_id = req.query.game_id;
+      const query = 'SELECT score FROM scores WHERE game_id = ?';
+
+      db.query(query, [game_id], (err, results) => {
+          if (err) {
+              console.error('Error retrieving data:', err);
+              return res.status(500).send('Error retrieving data');
+          }
+          if (results.length > 0) {
+              sendAndCreateImageUrl(game_id, results[0].score, res);
+          } else {
+              res.status(404).send('No data found');
+          }
+      });
+  });
 }
 
-// Paginated GET API to retrieve top scores
 app.get('/top-scores', (req, res) => {
   let page = parseInt(req.query.page) || 1;
   let limit = parseInt(req.query.limit) || 10;
@@ -151,7 +159,7 @@ app.get('/view-score', (req, res) => {
       <meta name="twitter:card" content="summary_large_image">
       <meta name="twitter:title" content="Check out my game score!">
       <meta name="twitter:description" content="I scored high on DOME! See my score and try to beat it.">
-      <meta name="twitter:image" content="https://dom-backend.onrender.com/score?game_id=${game_id}">
+      <meta name="twitter:image" content="http://localhost:3002/score?game_id=${game_id}">
       <style>
         img: {
           width: 100%;
@@ -169,7 +177,6 @@ app.get('/view-score', (req, res) => {
   `;
   res.send(htmlContent);
 });
-
 
 {/* <meta name="twitter:image" content="https://socialverse-assets.s3.amazonaws.com/GameMap.jpg"> */}
 
