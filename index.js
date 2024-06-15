@@ -159,7 +159,7 @@ app.get('/view-score', (req, res) => {
       <meta name="twitter:card" content="summary_large_image">
       <meta name="twitter:title" content="Check out my game score!">
       <meta name="twitter:description" content="I scored high on DOME! See my score and try to beat it.">
-      <meta name="twitter:image" content="http://localhost:3002/score?game_id=${game_id}">
+      <meta name="twitter:image" content="https://dom-backend.onrender.com/score?game_id=${game_id}">
       <style>
         img: {
           width: 100%;
