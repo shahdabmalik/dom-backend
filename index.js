@@ -145,7 +145,7 @@ app.get('/top-scores', (req, res) => {
       results: results
     });
   });
-});
+})
 
 app.get('/view-score', (req, res) => {
   const { game_id } = req.query;
